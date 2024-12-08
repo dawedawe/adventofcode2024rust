@@ -1,9 +1,20 @@
-use std::fs;
+use std::{cmp::Ordering, fs};
 
 const INPUT: &str = "day05input.txt";
 
 pub fn part1() {
-    let input = fs::read_to_string(INPUT).expect("read_to_string failed");
+    let (rules, updates) = get_rules_and_updates(INPUT);
+    let sum = updates
+        .iter()
+        .filter(|update| is_valid_update(update, &rules))
+        .map(|v| v[v.len() / 2])
+        .sum::<usize>();
+
+    println!("{}", sum);
+}
+
+fn get_rules_and_updates(path: &str) -> (Vec<(usize, usize)>, Vec<Vec<usize>>) {
+    let input = fs::read_to_string(path).expect("read_to_string failed");
     let lines = input.lines().collect::<Vec<&str>>();
     let rules = lines
         .iter()
@@ -19,13 +30,7 @@ pub fn part1() {
         .map(|s| s.split(",").map(|n| n.parse::<usize>().unwrap()).collect())
         .collect::<Vec<Vec<usize>>>();
 
-    let sum = updates
-        .iter()
-        .filter(|update| is_valid_update(update, &rules))
-        .map(|v| v[v.len() / 2])
-        .sum::<usize>();
-
-    println!("{}", sum);
+    (rules, updates)
 }
 
 fn is_valid_update(update: &Vec<usize>, rules: &Vec<(usize, usize)>) -> bool {
@@ -41,4 +46,36 @@ fn is_valid_update(update: &Vec<usize>, rules: &Vec<(usize, usize)>) -> bool {
     }
 
     true
+}
+
+pub fn part2() {
+    let (rules, updates) = get_rules_and_updates(INPUT);
+    let sum = updates
+        .iter()
+        .filter(|update| !is_valid_update(update, &rules))
+        .map(|u| order_update(u, &rules))
+        .map(|v| v[v.len() / 2])
+        .sum::<usize>();
+    println!("{sum}");
+}
+
+pub fn order_update(update: &Vec<usize>, rules: &Vec<(usize, usize)>) -> Vec<usize> {
+    let mut sorted = update.clone();
+
+    sorted.sort_by(|a, b| {
+        if let Some(_) = rules
+            .iter()
+            .find(|(before, after)| before == a && after == b)
+        {
+            Ordering::Less
+        } else if let Some(_) = rules
+            .iter()
+            .find(|(before, after)| before == b && after == a)
+        {
+            Ordering::Greater
+        } else {
+            Ordering::Equal
+        }
+    });
+    sorted
 }
