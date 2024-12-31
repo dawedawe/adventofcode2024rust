@@ -6,7 +6,7 @@ type Pos = (i32, i32);
 
 type Map = Vec<Vec<u8>>;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum Direction {
     Up,
     Down,
@@ -23,6 +23,7 @@ impl Direction {
         }
     }
 }
+#[derive(Clone, PartialEq, Eq, Hash)]
 struct Guard {
     pos: Pos,
     dir: Direction,
@@ -80,15 +81,58 @@ fn get_next(guard: &Guard, map: &Map) -> Option<Guard> {
     }
 }
 
-pub fn part1() {
-    let input = fs::read_to_string(INPUT).expect("read_to_string failed");
-    let map = input
+fn get_map(path: &str) -> Map {
+    fs::read_to_string(path)
+        .expect("read_to_string failed")
         .lines()
         .map(|line| line.bytes().collect::<Vec<u8>>())
-        .collect::<Vec<Vec<u8>>>();
+        .collect::<Vec<Vec<u8>>>()
+}
+
+pub fn part1() {
+    let map = get_map(INPUT);
     let guard = find_start(&map);
     let mut acc = HashSet::new();
     acc.insert(guard.pos);
     patrol(&guard, &map, &mut acc);
     println!("{}", acc.len());
+}
+
+pub fn part2() {
+    let map = get_map(INPUT);
+    let guard = find_start(&map);
+    let mut acc = HashSet::new();
+    acc.insert(guard.pos);
+    patrol(&guard, &map, &mut acc);
+    acc.remove(&guard.pos);
+    let options = acc
+        .iter()
+        .map(|candidate| {
+            let mut map_altered = map.clone();
+            map_altered[candidate.1 as usize][candidate.0 as usize] = b'#';
+            i32::from(is_loop(&guard, &map_altered))
+        })
+        .sum::<i32>();
+
+    println!("{}", options);
+}
+
+fn is_loop(guard: &Guard, map: &Map) -> bool {
+    fn run(pos: &Guard, map: &Map, acc: &mut HashSet<Guard>) -> bool {
+        let next = get_next(pos, map);
+        if let Some(next_guard) = next {
+            if acc.insert(next_guard.clone()) {
+                return run(&next_guard, map, acc);
+            } else {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    let mut acc = HashSet::new();
+    acc.insert((*guard).clone());
+
+    run(guard, map, &mut acc)
 }
