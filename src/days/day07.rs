@@ -20,7 +20,7 @@ fn parse_line(line: &str) -> Equation {
     }
 }
 
-fn is_solvable(eq: &Equation) -> bool {
+fn is_solvable(eq: &Equation, with_concat: bool) -> bool {
     let a = *eq.numbers.first().unwrap();
     let acc = vec![a];
     let results = eq.numbers.iter().skip(1).fold(acc, |acc, x| {
@@ -28,6 +28,10 @@ fn is_solvable(eq: &Equation) -> bool {
         for a in acc {
             next_acc.push(a + x);
             next_acc.push(a * x);
+            if with_concat {
+                let ax = format!("{}{}", a, x).parse().unwrap();
+                next_acc.push(ax);
+            }
         }
         next_acc
     });
@@ -40,7 +44,18 @@ pub fn part1() {
     let sum = input
         .lines()
         .map(parse_line)
-        .filter(is_solvable)
+        .filter(|eq| is_solvable(eq, false))
+        .map(|eq| eq.result)
+        .sum::<i64>();
+    println!("{}", sum);
+}
+
+pub fn part2() {
+    let input = fs::read_to_string(INPUT).expect("read_to_string failed");
+    let sum = input
+        .lines()
+        .map(parse_line)
+        .filter(|eq| is_solvable(eq, true))
         .map(|eq| eq.result)
         .sum::<i64>();
     println!("{}", sum);
