@@ -35,6 +35,36 @@ fn get_antinodes(a1: Coords, a2: Coords) -> (Coords, Coords) {
     (antinode1, antinode2)
 }
 
+fn get_antinodes_part2(a1: Coords, a2: Coords, spec: &Spec) -> Vec<Coords> {
+    let mut antinodes = vec![a1];
+    let (y_diff, x_diff) = ((a2.0 - a1.0), (a2.1 - a1.1));
+
+    loop {
+        let ref_coord = antinodes[antinodes.len() - 1];
+        let candidate = (ref_coord.0 - y_diff, ref_coord.1 - x_diff);
+        if is_valid_coord(candidate, spec.max_y as i32, spec.max_x as i32) {
+            antinodes.push(candidate);
+        } else {
+            break;
+        }
+    }
+
+    antinodes.push(a2);
+
+    loop {
+        let ref_coord = antinodes[antinodes.len() - 1];
+
+        let candidate = (ref_coord.0 + y_diff, ref_coord.1 + x_diff);
+        if is_valid_coord(candidate, spec.max_y as i32, spec.max_x as i32) {
+            antinodes.push(candidate);
+        } else {
+            break;
+        }
+    }
+
+    antinodes
+}
+
 fn calc_antinodes(spec: &Spec) -> usize {
     let mut antinodes_set: HashSet<Coords> = HashSet::new();
 
@@ -51,6 +81,21 @@ fn calc_antinodes(spec: &Spec) -> usize {
         });
     }
     antinodes_set.len()
+}
+
+fn calc_antinodes_part2(spec: &Spec) -> usize {
+    let mut antinodes_set: HashSet<Coords> = HashSet::new();
+
+    for a in spec.antennas.iter() {
+        let pairs = get_pairs(a.1);
+        pairs.iter().for_each(|p| {
+            let antinodes = get_antinodes_part2(p.0, p.1, spec);
+            antinodes.into_iter().for_each(|n| {
+                antinodes_set.insert(n);
+            });
+        });
+    }
+    antinodes_set.len() // + spec.antennas.len()
 }
 
 fn parse_input(input: String) -> Spec {
@@ -71,6 +116,12 @@ fn parse_input(input: String) -> Spec {
         }
     }
 
+    let antennas_filtered = antennas.into_iter().filter(|e| e.1.len() >= 2);
+    let mut antennas: HashMap<char, Vec<Coords>> = HashMap::new();
+    antennas_filtered.into_iter().for_each(|x| {
+        antennas.insert(x.0, x.1);
+    });
+
     Spec {
         antennas,
         max_y,
@@ -82,5 +133,12 @@ pub fn part1() {
     let input = fs::read_to_string(INPUT).expect("read_to_string failed");
     let spec = parse_input(input);
     let r = calc_antinodes(&spec);
+    println!("{}", r);
+}
+
+pub fn part2() {
+    let input = fs::read_to_string(INPUT).expect("read_to_string failed");
+    let spec = parse_input(input);
+    let r = calc_antinodes_part2(&spec);
     println!("{}", r);
 }
