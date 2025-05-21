@@ -50,7 +50,7 @@ fn next_steps(map: &Map, (x, y): Pos) -> Vec<Pos> {
     next
 }
 
-fn find_trails(map: &Map, head: Pos) -> usize {
+fn find_trails(map: &Map, head: Pos) -> Vec<Path> {
     let mut trails = vec![];
     let mut q: LinkedList<Path> = std::collections::LinkedList::new();
     let initial_path = vec![head];
@@ -73,10 +73,7 @@ fn find_trails(map: &Map, head: Pos) -> usize {
         }
     }
 
-    let mut trails: Vec<Pos> = trails.iter().map(|path| path[path.len() - 1]).collect();
-    trails.sort();
-    trails.dedup();
-    trails.len()
+    trails
 }
 
 pub fn part1() {
@@ -86,6 +83,33 @@ pub fn part1() {
         .to_string();
     let map = parse_input(input);
     let heads = find_trailheads(&map);
-    let s: usize = heads.into_iter().map(|head| find_trails(&map, head)).sum();
-    println!("{s}");
+    let trails = heads
+        .into_iter()
+        .map(|head| find_trails(&map, head))
+        .collect::<Vec<Vec<Path>>>();
+    let sum: usize = trails
+        .iter()
+        .map(|trails| {
+            let mut trails: Vec<Pos> = trails.iter().map(|trail| trail[trail.len() - 1]).collect();
+            trails.sort();
+            trails.dedup();
+            trails.len()
+        })
+        .sum();
+
+    println!("{sum}");
+}
+
+pub fn part2() {
+    let input = fs::read_to_string(INPUT)
+        .expect("read_to_string failed")
+        .trim()
+        .to_string();
+    let map = parse_input(input);
+    let heads = find_trailheads(&map);
+    let sum: usize = heads
+        .into_iter()
+        .map(|head| find_trails(&map, head).len())
+        .sum();
+    println!("{sum}");
 }
