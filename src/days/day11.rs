@@ -1,4 +1,4 @@
-use std::fs;
+use std::{collections::HashMap, fs};
 
 const INPUT: &str = "day11input.txt";
 
@@ -19,22 +19,47 @@ fn transform(stone: String) -> Vec<String> {
     }
 }
 
-fn blink(times: usize, stones: Vec<String>) -> Vec<String> {
-    if times == 0 {
-        stones
+fn blink(times: usize, stones: HashMap<String, u64>) -> u64 {
+    if times > 0 {
+        let mut new_stones: HashMap<String, u64> = HashMap::new();
+        for (k, count) in stones {
+            let transformed = transform(k.to_string());
+            for stone in transformed {
+                match new_stones.get(&stone) {
+                    Some(existing) => new_stones.insert(stone, existing + count),
+                    None => new_stones.insert(stone, count),
+                };
+            }
+        }
+
+        blink(times - 1, new_stones)
     } else {
-        let stones = stones.into_iter().flat_map(transform).collect();
-        blink(times - 1, stones)
+        stones.values().sum()
     }
 }
 
-pub fn part1() {
+pub fn parse_input() -> HashMap<String, u64> {
     let input = fs::read_to_string(INPUT)
         .expect("read_to_string failed")
         .trim()
         .to_string();
 
-    let stones: Vec<String> = input.split_whitespace().map(|s| s.to_string()).collect();
-    let stones = blink(25, stones);
-    println!("{}", stones.len());
+    let mut map = HashMap::new();
+    input.split_whitespace().for_each(|s| {
+        let key = s.to_string();
+        map.entry(key).or_insert(1);
+    });
+    map
+}
+
+pub fn part1() {
+    let stones = parse_input();
+    let sum = blink(25, stones);
+    println!("{}", sum);
+}
+
+pub fn part2() {
+    let stones = parse_input();
+    let sum = blink(75, stones);
+    println!("{}", sum);
 }
