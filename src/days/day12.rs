@@ -16,6 +16,19 @@ pub fn parse_input() -> Map {
 type Pos = (i32, i32); // (x, y)
 type Map = Vec<Vec<char>>;
 
+#[derive(PartialEq)]
+enum Orientation {
+    Top,
+    Right,
+    Bottom,
+    Left,
+}
+
+struct Side {
+    orientation: Orientation,
+    pos: Pos,
+}
+
 struct Region {
     plant: char,
     positions: Vec<Pos>,
@@ -78,6 +91,69 @@ impl Region {
     fn price(&self, map: &Map) -> u32 {
         self.positions.len() as u32 * self.perimeter(map)
     }
+
+    fn price_part2(&self, map: &Map) -> u32 {
+        self.positions.len() as u32 * self.sides(map)
+    }
+
+    fn pos_sides(&self, pos: &Pos, map: &Map) -> Vec<Side> {
+        let mut sides = vec![];
+        [
+            ((pos.0, pos.1 - 1), Orientation::Top),
+            ((pos.0, pos.1 + 1), Orientation::Bottom),
+            ((pos.0 - 1, pos.1), Orientation::Left),
+            ((pos.0 + 1, pos.1), Orientation::Right),
+        ]
+        .into_iter()
+        .for_each(|(p, o)| {
+            if self.is_different_region_or_outside_map(&p, map) {
+                sides.push(Side {
+                    orientation: o,
+                    pos: *pos,
+                })
+            }
+        });
+
+        sides
+    }
+
+    fn sides(&self, map: &Map) -> u32 {
+        let mut sides_count = 0;
+        let mut all_sides = vec![];
+        for pos in &self.positions {
+            let sides_of_pos = self.pos_sides(pos, map);
+            sides_of_pos.into_iter().for_each(|s| {
+                if !Region::is_continuation_side(&all_sides, &s) {
+                    sides_count += 1;
+                }
+                all_sides.push(s)
+            });
+        }
+
+        sides_count
+    }
+
+    fn is_continuation_side(all_sides: &[Side], new_side: &Side) -> bool {
+        let upper = (new_side.pos.0, new_side.pos.1 - 1);
+        let lower = (new_side.pos.0, new_side.pos.1 + 1);
+        let left = (new_side.pos.0 - 1, new_side.pos.1);
+        let right = (new_side.pos.0 + 1, new_side.pos.1);
+
+        match new_side.orientation {
+            Orientation::Top => all_sides.iter().any(|side| {
+                side.orientation == Orientation::Top && (side.pos == left || side.pos == right)
+            }),
+            Orientation::Right => all_sides.iter().any(|side| {
+                side.orientation == Orientation::Right && (side.pos == upper || side.pos == lower)
+            }),
+            Orientation::Bottom => all_sides.iter().any(|side| {
+                side.orientation == Orientation::Bottom && (side.pos == left || side.pos == right)
+            }),
+            Orientation::Left => all_sides.iter().any(|side| {
+                side.orientation == Orientation::Left && (side.pos == upper || side.pos == lower)
+            }),
+        }
+    }
 }
 
 fn find_regions(map: &Map) -> Vec<Region> {
@@ -124,5 +200,12 @@ pub fn part1() {
     let map = parse_input();
     let regions = find_regions(&map);
     let sum: u32 = regions.iter().map(|r| r.price(&map)).sum();
+    println!("{}", sum);
+}
+
+pub fn part2() {
+    let map = parse_input();
+    let regions = find_regions(&map);
+    let sum: u32 = regions.iter().map(|r| r.price_part2(&map)).sum();
     println!("{}", sum);
 }
