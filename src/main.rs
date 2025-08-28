@@ -1,5 +1,5 @@
 use adventofcode2024rust::days;
 
 fn main() {
-    days::day12::part2();
+    days::day13::part1();
 }
