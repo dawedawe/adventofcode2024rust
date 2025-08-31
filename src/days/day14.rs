@@ -21,9 +21,13 @@ impl Robot {
     }
 }
 
-fn steps(robots: &mut [Robot], n: u32) {
-    for _ in 0..n {
+fn steps(robots: &mut [Robot], n: u32, show_step: bool) {
+    for s in 1..=n {
         robots.iter_mut().for_each(|r| r.step());
+        if show_step {
+            println!("{s}");
+            show(robots);
+        }
     }
 }
 
@@ -74,7 +78,26 @@ fn parse_input() -> Vec<Robot> {
 
 pub fn part1() {
     let mut robots = parse_input();
-    steps(&mut robots, 100);
+    steps(&mut robots, 100, false);
     let f = safety_factor(robots);
     println!("{f}")
+}
+
+fn show(robots: &[Robot]) {
+    for row in 0..HEIGHT {
+        for col in 0..WIDTH {
+            let c = if robots.iter().any(|r| r.x_pos == col && r.y_pos == row) {
+                "#"
+            } else {
+                "."
+            };
+            print!("{c}");
+        }
+        println!();
+    }
+}
+
+pub fn part2() {
+    let mut robots = parse_input();
+    steps(&mut robots, 7858, true);
 }
