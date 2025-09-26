@@ -1,4 +1,4 @@
-use std::{collections::LinkedList, fs};
+use std::fs;
 
 const INPUT: &str = "day16input.txt";
 
@@ -90,31 +90,41 @@ fn parse_input() -> Map {
         .map(|line| line.chars().collect::<Vec<char>>())
         .collect::<Vec<Vec<_>>>()
 }
+fn is_other_better(q: &[Node], solutions: &[Node], node: &Node) -> bool {
+    let solution_is_better = {
+        if let Some(best_solution) = solutions.first() {
+            best_solution.score < node.score
+        } else {
+            false
+        }
+    };
+    solution_is_better
+        || q.iter()
+            .any(|o| o.path.contains(node.path.last().unwrap()) && o.score < node.score)
+}
 
 fn find_trails(map: &Map, head: Node) -> Vec<Node> {
-    let possible_moves = [
-        Move::Forward,
-        Move::TurnClockwise,
-        Move::TurnCounterClockwise,
-    ];
+    let possible_moves = [Move::TurnClockwise, Move::TurnCounterClockwise];
     let mut solutions = vec![];
-    let mut q: LinkedList<Node> = std::collections::LinkedList::new();
-    q.push_back(head);
-    while let Some(node) = q.pop_front() {
+    let mut q = vec![];
+    q.push(head);
+    while let Some(node) = q.pop() {
         let last_pos = node.path.last().expect("unexpected empty path");
         if map[last_pos.0][last_pos.1] == 'E' {
             solutions.push(node);
         } else {
+            let mut forward_node = node.clone();
+            let is_possible = forward_node.try_move(map, &Move::Forward);
+            let other_is_better = is_other_better(&q, &solutions, &forward_node);
+            if is_possible && !other_is_better {
+                q.push(forward_node);
+            }
             for m in possible_moves.iter() {
                 let mut node = node.clone();
                 let is_possible = node.try_move(map, m);
-                let other_is_better = {
-                    q.iter().any(|o| {
-                        o.path.contains(node.path.last().unwrap()) && o.score <= node.score
-                    })
-                };
+                let other_is_better = is_other_better(&q, &solutions, &node);
                 if is_possible && !other_is_better {
-                    q.push_back(node);
+                    q.insert(0, node);
                 }
             }
         }
@@ -134,4 +144,27 @@ pub fn part1() {
     let solutions = find_trails(&map, node);
     let min = solutions.iter().min_by_key(|n| n.score).unwrap();
     println!("{}", min.score);
+}
+
+pub fn part2() {
+    let map = parse_input();
+    let starting_pos = (map.len() - 2, 1);
+    let node = Node {
+        path: vec![starting_pos],
+        facing: Direction::East,
+        score: 0,
+    };
+    let solutions = find_trails(&map, node);
+    let min = solutions.iter().min_by_key(|n| n.score).unwrap().score;
+    let min_solutions: Vec<Path> = solutions
+        .into_iter()
+        .filter(|n| n.score == min)
+        .map(|n| n.path)
+        .collect();
+    let mut tiles = min_solutions.concat();
+    tiles.sort();
+    tiles.dedup();
+    println!("min {min}");
+    println!("min_solutions {}", min_solutions.len());
+    println!("tiles {}", tiles.len());
 }
